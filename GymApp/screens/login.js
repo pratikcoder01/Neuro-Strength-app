@@ -11,16 +11,24 @@ import {
   StyleSheet,
 } from 'react-native';
 
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../firebase'; // adjust the path if needed
+
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
-    // Dummy login check
-    if (email === 'Pratk' && password === '1') {
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Missing Fields', 'Please enter both email and password');
+      return;
+    }
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
       navigation.replace('Dashboard');
-    } else {
-      Alert.alert('Login Failed', 'Invalid email or password');
+    } catch (error) {
+      Alert.alert('Login Failed', error.message);
     }
   };
 
@@ -33,8 +41,6 @@ export default function LoginScreen({ navigation }) {
         <Image source={require('../assets/logo.png')} style={styles.logo} />
         <Text style={styles.title}>Welcome to Neuro-Strength</Text>
       </View>
-
-      
 
       <View style={styles.formContainer}>
         <TextInput
@@ -54,12 +60,13 @@ export default function LoginScreen({ navigation }) {
           onChangeText={setPassword}
           secureTextEntry
         />
+
         <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
           <Text style={styles.loginButtonText}>Login</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-          <Text style={styles.link}>Don't have an account? Sign Up</Text>
+          <Text style={styles.link}>Don’t have an account? Sign Up</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -69,7 +76,7 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000ff', // dark background
+    backgroundColor: '#000000ff',
     padding: 20,
     justifyContent: 'center',
   },
@@ -84,12 +91,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   title: {
-    fontSize: 26,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '600',
     color: '#fff',
+    textAlign: 'center',
   },
   formContainer: {
-    backgroundColor: '#111827', // card background
+    backgroundColor: '#000000ff',
     padding: 20,
     borderRadius: 12,
     elevation: 5,
@@ -101,7 +109,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     color: '#fff',
-    backgroundColor: '#1f2937',
+    backgroundColor: '#334155',
   },
   loginButton: {
     backgroundColor: '#10b981',

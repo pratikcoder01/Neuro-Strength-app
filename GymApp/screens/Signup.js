@@ -3,79 +3,95 @@ import {
   View,
   Text,
   TextInput,
-  StyleSheet,
-  Alert,
   TouchableOpacity,
+  StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Image,
+  Alert,
 } from 'react-native';
+
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../firebase';
 
 export default function SignupScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  const handleSignup = () => {
-    if (email && password.length >= 6) {
-      Alert.alert('Success', 'Account created successfully!');
-      navigation.replace('Dashboard');
-    } else {
-      Alert.alert('Error', 'Please enter a valid email and password (min 6 characters)');
-    }
+  const validateEmail = (email) => {
+    const re = /\S+@\S+\.\S+/;
+    return re.test(email);
   };
 
-  const handleGoogleSignup = () => {
-    Alert.alert('Google Sign Up', 'Google sign-up logic goes here.');
-    navigation.replace('Dashboard');
+  const handleSignup = async () => {
+    if (!email || !password) {
+      setError('All fields are required');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError('Invalid email format');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      setError('');
+      Alert.alert('Success', 'Account created successfully!');
+      navigation.replace('Dashboard');
+    } catch (err) {
+      if (err.code === 'auth/email-already-in-use') {
+        setError('Email is already in use');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Invalid email address');
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
+    }
   };
 
   return (
     <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.logoContainer}>
-        <Image source={require('../assets/logo.png')} style={styles.logo} />
-        <Text style={styles.title}>Create Your Gym Account</Text>
-      </View>
+      <Text style={styles.title}>Create Account</Text>
 
-      <View style={styles.formContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#888"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#888"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        placeholderTextColor="#888"
+        value={email}
+        autoCapitalize="none"
+        onChangeText={setEmail}
+      />
 
-        <TouchableOpacity style={styles.signupButton} onPress={handleSignup}>
-          <Text style={styles.signupButtonText}>Sign Up</Text>
-        </TouchableOpacity>
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        placeholderTextColor="#888"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
 
-        <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignup}>
-          <Image
-            source={{
-              uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png',
-            }}
-            style={styles.googleIcon}
-          />
-          <Text style={styles.googleButtonText}>Sign Up with Google</Text>
-        </TouchableOpacity>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.link}>Already have an account? Log In</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={styles.button} onPress={handleSignup}>
+        <Text style={styles.buttonText}>Sign Up</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.loginText}>
+        Already have an account?{' '}
+        <Text style={styles.link} onPress={() => navigation.navigate('Login')}>
+          Login here
+        </Text>
+      </Text>
     </KeyboardAvoidingView>
   );
 }
@@ -83,74 +99,51 @@ export default function SignupScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000ff',
-    padding: 20,
+    paddingHorizontal: 24,
     justifyContent: 'center',
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    resizeMode: 'contain',
-    marginBottom: 10,
+    backgroundColor: '#000',
   },
   title: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 'bold',
+    marginBottom: 32,
+    textAlign: 'center',
     color: '#fff',
-  },
-  formContainer: {
-    backgroundColor: '#111827',
-    padding: 20,
-    borderRadius: 12,
-    elevation: 5,
   },
   input: {
     borderWidth: 1,
     borderColor: '#374151',
-    marginBottom: 15,
-    padding: 12,
-    borderRadius: 8,
-    color: '#fff',
     backgroundColor: '#1f2937',
-  },
-  signupButton: {
-    backgroundColor: '#10b981',
-    padding: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  signupButtonText: {
+    marginBottom: 16,
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
   },
-  googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 14,
+  button: {
+    backgroundColor: '#10b981',
+    paddingVertical: 14,
     borderRadius: 8,
-    justifyContent: 'center',
-    marginBottom: 10,
+    marginTop: 8,
   },
-  googleButtonText: {
-    color: '#000',
-    fontWeight: 'bold',
+  buttonText: {
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: '600',
     fontSize: 16,
-    marginLeft: 10,
   },
-  googleIcon: {
-    width: 20,
-    height: 20,
+  error: {
+    color: 'red',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  loginText: {
+    textAlign: 'center',
+    marginTop: 24,
+    color: '#ccc',
   },
   link: {
-    marginTop: 15,
     color: '#60a5fa',
-    textAlign: 'center',
+    fontWeight: '600',
   },
 });
